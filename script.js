@@ -1,5 +1,5 @@
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
-    import {getDatabase, set, ref, get, off,onValue,update, query,remove, orderByValue} from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+import {getDatabase, set, ref, get, off,onValue,update, query,remove, orderByValue} from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
 import {getAuth, GoogleAuthProvider, signInWithPopup, signOut} from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
 
     const firebaseConfig = {
@@ -34,18 +34,27 @@ import {getAuth, GoogleAuthProvider, signInWithPopup, signOut} from "https://www
         if (firebaseInput.value == undefined || firebaseInput.value == null || firebaseInput.value == ""){
             alert("Please type into the input");
         } else {
-            const name = await fb_auth();
-
-            fb_write(`message/${name}`, firebaseInput.value, (_data, _path) => {
-                alert(`Sucessfully Wrote ${_data} @ ${_path}`);
+            const name = await fb_auth();   
+            fb_update(`messages/${name.uid}`, {
+                sender: name.name,
+                [Date.now()] : firebaseInput.value
             })
         }
     }
 
     document.getElementById("firebase-read-btn").onclick = async () => {
-        var msg = await fb_read("message");
-        if (msg != null) {
-            document.getElementById("heading").innerHTML = msg;
+        var msgs = await fb_read("messages");
+
+        if (msgs != null) {
+            for (const [timestamp, value] of Object.entries(msgs)){
+                console.log(`${value.sender} Sent the Msg '${value.msg}' @ ${timestamp}`)
+                const li = document.createElement("li");
+                li.textContent = `${value.sender} Sent the Msg '${value.msg}' @ ${timestamp}`;
+                const list = document.getElementById("msg-list");
+                list.appendChild(li);
+            }
+
+            document.getElementById("heading").innerHTML = msgs;
         } else {
             alert("No Message Data Found")
         }
@@ -74,10 +83,24 @@ import {getAuth, GoogleAuthProvider, signInWithPopup, signOut} from "https://www
         PROVIDER.setCustomParameters({prompt: 'select_account'});
         try {
             const RESULT = await signInWithPopup(getAuth(), PROVIDER);
-            return RESULT.user.displayName;
+            return {
+                name : RESULT.user.displayName,
+                uid : RESULT.user.uid
+            }
         } catch (_error){
             alert(`Encounted an Error during Auth: ${_error}`)
             return null;
+        }
+    }
+
+    async function fb_update(_path, _data, _then = null){
+        try{
+            await update(ref(getDatabase(app), _path), _data);
+            if(_then != null) _then();
+        } catch (_error){
+            const MSG = `Error Updating ${_data} @ "${_path}": ${_error}`
+            console.error(MSG)
+            alert(`Firebase Error Updating Data: See Console`);
         }
     }
 
