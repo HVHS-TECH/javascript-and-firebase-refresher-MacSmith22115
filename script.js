@@ -33,9 +33,27 @@
         if (firebaseInput.value == undefined || firebaseInput.value == null || firebaseInput.value == ""){
             alert("Please type into the input");
         } else {
-            fb_write(`messages/${Date.now()}`, firebaseInput.value, (_data, _path) => {
+            fb_write(`message`, firebaseInput.value, (_data, _path) => {
                 alert(`Sucessfully Wrote ${_data} @ ${_path}`);
             })
+        }
+    }
+
+    document.getElementById("firebase-read-btn").onclick = async () => {
+        var msg = await fb_read("message");
+        if (msg != null) {
+            document.getElementById("heading").innerHTML = msg;
+        } else {
+            alert("No Message Data Found")
+        }
+    }
+
+    async function fb_read(_path) {
+        try {
+            const snapshot = await get(ref(getDatabase(app), _path))
+            return snapshot.exists() ? snapshot.val() : null;
+        } catch (_error){
+            alert(`Error Reading Data @ ${_path}: ${_error}`)
         }
     }
 
