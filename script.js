@@ -1,5 +1,6 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
     import {getDatabase, set, ref, get, off,onValue,update, query,remove, orderByValue} from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
+import {getAuth, GoogleAuthProvider, signInWithPopup, signOut} from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCAOPnMr_-61TVbtvgW3VWvh6af_KOPYwk",
@@ -29,11 +30,13 @@
         document.getElementById("heading").innerHTML = msg;
     }
 
-    document.getElementById("firebase-btn").onclick = () => {
+    document.getElementById("firebase-btn").onclick = async () => {
         if (firebaseInput.value == undefined || firebaseInput.value == null || firebaseInput.value == ""){
             alert("Please type into the input");
         } else {
-            fb_write(`message`, firebaseInput.value, (_data, _path) => {
+            const name = await fb_auth();
+
+            fb_write(`message/${name}`, firebaseInput.value, (_data, _path) => {
                 alert(`Sucessfully Wrote ${_data} @ ${_path}`);
             })
         }
@@ -63,6 +66,18 @@
             if (_callback != null && _callback instanceof Function) _callback(_data, _path);
         } catch (_error){
             alert(`Error Writing ${_data} @ ${_path}: ${_error}`);
+        }
+    }
+
+    async function fb_auth() {
+        const PROVIDER = new GoogleAuthProvider();
+        PROVIDER.setCustomParameters({prompt: 'select_account'});
+        try {
+            const RESULT = await signInWithPopup(getAuth(), PROVIDER);
+            return RESULT.user.displayName;
+        } catch (_error){
+            alert(`Encounted an Error during Auth: ${_error}`)
+            return null;
         }
     }
 
