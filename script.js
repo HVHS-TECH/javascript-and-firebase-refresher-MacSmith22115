@@ -44,16 +44,34 @@ import {getAuth, GoogleAuthProvider, signInWithPopup, signOut} from "https://www
 
     document.getElementById("firebase-read-btn").onclick = async () => {
         var msgs = await fb_read("messages");
+        const list = document.getElementById("msg-list");
+        while (list.firstChild){
+            list.removeChild(list.firstChild);
+        }
 
         if (msgs != null) {
-            for (const [timestamp, value] of Object.entries(msgs)){
-                console.log(`${value.sender} Sent the Msg '${value.msg}' @ ${timestamp}`)
+            const messageList = new Map();
+            for (const [uid, userData] of Object.entries(msgs)){
+                for (const [field, value] of Object.entries(userData)){
+                    if (field == "sender") continue;
+                    messageList.set(field, {
+                        sender : userData.sender,
+                        msg : value
+                    })
+                }
+            }
+            const sortedEntries = Array.from(messageList.entries()).sort((a, b) => {
+                return a[0] - b[0];
+            })
+
+            const sortedMap = new Map(sortedEntries);
+
+            sortedMap.forEach((v, k) => {
                 const li = document.createElement("li");
-                li.textContent = `${value.sender} Sent the Msg '${value.msg}' @ ${timestamp}`;
+                li.textContent = `${v.sender}: "${v.msg}"`;
                 const list = document.getElementById("msg-list");
                 list.appendChild(li);
-            }
-
+            })
             document.getElementById("heading").innerHTML = msgs;
         } else {
             alert("No Message Data Found")
